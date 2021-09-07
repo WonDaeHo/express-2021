@@ -1,0 +1,10 @@
+{
+    "extends": "eslint:recommented", // 기본 룰 셋팅 - 어떤 것을 참조 할 것이냐 ttps://eslint.org/docs/rules/ 에서 룰 참조
+    "env": { // eslint 가 동작하는 환경 ex) node, react ...
+        "node": true,
+        "ex2021" : true,
+    },
+    "rules": { // 룰 설정
+
+    }
+}
