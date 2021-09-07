@@ -27,7 +27,7 @@ boardRouter.get("/:id", (req, res) => {
             msg, findBoard
         });
     } else {
-        msg = "해당 아이디를 가진 게시판이 없습니다.";
+        msg = "해당 아이디를 가진 글이 없습니다.";
         res.status(400).send({
             msg, findBoard
         });
@@ -35,14 +35,13 @@ boardRouter.get("/:id", (req, res) => {
     
 });
 
-//유저생성
 boardRouter.post("", (req, res) => {
     const createBoard = req.body;
     const check_board = _.find(boards, ["id", createBoard.id]);
     let result;
-    if(!check_board && createBoard.id && createBoard.title && createBoard.content && createBoard.createBoard && createBoard.updateDate){
+    if(!check_board && createBoard.id && createBoard.title && createBoard.content && createBoard.createDate && createBoard.updateDate){
         boards.push(createBoard);
-        result = `${createBoard.name} 게시글이 생성되었습니다.`
+        result = `${createBoard.title} 게시글이 생성되었습니다.`
     } else {
         result = '입력 요청값이 잘못되었습니다.'
     }
@@ -51,36 +50,34 @@ boardRouter.post("", (req, res) => {
     });
 });
 
-//name 변경
 boardRouter.put("/:id", (req, res) => {
     const findBoard = _.find(boards, {id: parseInt(req.params.id)});
     let result;
     if(findBoard && findBoard.id == req.params.id){
-        findBoard.name = req.body.name;
-        result = `유저 이름을 ${findBoard.name}으로 변경`;
+        findBoard.title = req.body.title;
+        result = `게시판 제목을 ${findBoard.title}으로 변경`;
         res.status(200).send({
             result
         });
     } else {
-        result = `아이디가 ${req.params.id}인 유저가 존재하지 않습니다.`;
+        result = `아이디가 ${req.params.id}인 글이 존재하지 않습니다.`;
         res.status(400).send({
             result
         });
     }
 });
 
-//user 지우기
 boardRouter.delete("/:id", (req, res) => {
     let findBoard = _.find(boards, {id: parseInt(req.params.id)});
     let result;
     if(findBoard && findBoard.id == req.params.id){
         boards = _.reject(boards, ["id", parseInt(req.params.id)]);
-        result = `아이디가 ${req.params.id}인 유저 삭제`;
+        result = `아이디가 ${req.params.id}인 글 삭제`;
         res.status(200).send({
             result
         });
     } else {
-        result = `아이디가 ${req.params.id}인 유저가 존재하지 않습니다.`;
+        result = `아이디가 ${req.params.id}인 글이 존재하지 않습니다.`;
         res.status(400).send({
             result
         });
