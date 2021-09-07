@@ -1,29 +1,26 @@
 import { Router } from "express";
 import _ from "lodash";
+import faker from "faker";
+faker.locale = "ko";
 
 const userRouter = Router();
 
-let users = [{
-    id: 1,
-    name: "홍길동",
-    age: 21
-},{
-    id: 2,
-    name: "이길동",
-    age: 22
-},{
-    id: 3,
-    name: "삼길동",
-    age: 23
-},{
-    id: 4,
-    name: "사길동",
-    age: 24
-},{
-    id: 5,
-    name: "오길동",
-    age: 25
-}];
+const getRandomInt = (min, max) => {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min);
+}
+
+let users = [];
+for (let i=1; i<1000; i+=1){
+    users.push({
+        id: i,
+        name: faker.name.lastName() + faker.name.firstName(),
+        age: getRandomInt(15, 50),
+    })
+}
+console.log("준비됨");
+
 
 userRouter.get("/", (req, res) => {
     res.send({
