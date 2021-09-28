@@ -1,12 +1,14 @@
 import { Router } from "express";
-// import _, { create } from "lodash";
+import _ from "lodash";
 import sequelize from "sequelize";
 import faker from "faker";
+import bcrypt from "bcrypt";
 faker.locale = "ko";
 
 const seq = new sequelize('express', 'root', 'hoy2158831a@', {
     host: 'localhost',
-    dialect: 'mysql'
+    dialect: 'mysql',
+    // logging: false
 });
 
 const check_sequelize_auth = async () => {
@@ -27,23 +29,39 @@ const User = seq.define("user", {
     age: {
         type: sequelize.INTEGER,
         allowNull: false
+    },
+    password: {
+        type: sequelize.STRING,
+        allowNull: false
     }
 });
+
+// const initDb = async() => {
+//     await User.sync();
+//     await Board.sync();
+// }
+// initDb();
+
 
 const user_sync = async () => {
     try {
         await User.sync({force: true});
-        for(let i=0; i<100; i++) {
+        for(let i=0; i<10000; i++) {
+            const hashpwd = await bcrypt.hash("test1234", 10);
             User.create({
                 name: faker.name.lastName()+faker.name.firstName(),
-                age: getRandomInt(15,50)  // i 일때, await으로 동기처리를 해줘야함.
+                age: getRandomInt(15,50),  // i 일때, await으로 동기처리를 해줘야함.
+                password: hashpwd
             });
         }
     } catch(err) {
         console.log(err);
     }
 };
+
+
 // user_sync();  // 유저 생성 안할때, 주석
+
 
 const userRouter = Router();
 
@@ -62,7 +80,7 @@ userRouter.get("/", async(req, res) => {
         let { name, age } = req.query;
         const { Op } = sequelize;
         const findUserQuery = {
-            attributes: ['name', 'age'],
+            attributes: ['id', 'name', 'age'],
         }
         let result;
         if (name && age) {
@@ -104,7 +122,7 @@ userRouter.get("/:id", (req, res) => {
 //유저생성
 userRouter.post("", async(req, res) => {
     try {
-        const { name, age} = req.body;
+        const { name, age } = req.body;
         if (!name || !age) res.status(400).send({msg: "입력요청이 잘못되었습니다."});
 
         const result = await User.create({name, age});
@@ -121,38 +139,103 @@ userRouter.post("", async(req, res) => {
 });
 
 //name 변경
-userRouter.put("/:id", (req, res) => {
-    const findUser = _.find(users, {id: parseInt(req.params.id)});
-    let result;
-    if(findUser && findUser.id == req.params.id){
-        findUser.name = req.body.name;
-        result = `유저 이름을 ${findUser.name}으로 변경`;
-        res.status(200).send({
-            result
+userRouter.put("/:id", async (req, res) => {
+    try{
+        const { name, age } = req.body;
+
+        let user = await User.findOne({
+            where: {
+                id: req.params.id
+            }
         });
-    } else {
-        result = `아이디가 ${req.params.id}인 유저가 존재하지 않습니다.`;
-        res.status(400).send({
-            result
-        });
+        if(!user || (!name && !age)) {
+            res.status(400).send({msg: '유저가 존재하지 않거나 입력값이 잘못 되었습니다.'});
+        }
+
+        if(name) user.name = name;
+        if(age)  user.age  = age;
+
+        await user.save();
+
+        res.status(200).send({ msg: '유저정보가가 정상적으로 수정 되었습니다.' });
+
+    } catch(err) {
+        console.log(err);
+        res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
     }
 });
 
 //user 지우기
-userRouter.delete("/:id", (req, res) => {
-    let findUser = _.find(users, {id: parseInt(req.params.id)});
-    let result;
-    if(findUser && findUser.id == req.params.id){
-        users = _.reject(users, ["id", parseInt(req.params.id)]);
-        result = `아이디가 ${req.params.id}인 유저 삭제`;
+userRouter.delete("/:id", async (req, res) => {  // auth(인증)체크 || 권한 체크
+    try {
+
+        let user = await User.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
+        if(!user) {
+            res.status(400).send({msg: '유저가 존재하지 않거나 입력값이 잘못 되었습니다.'});
+        }
+
+        await user.destroy();
+        res.status(200).send({ msg: '유저정보가가 정상적으로 삭제 되었습니다.' });
+
+    } catch(err) {
+        console.log(err);
+        res.status(500).send({ msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.' });
+    }
+});
+
+userRouter.get("/test/:id", async(req, res) => {
+    try{
+        // findAll
+        const Op = sequelize.Op;
+        const userResult = await User.findAll({
+            attributes: ['id', 'name', 'age', 'updatedAt'],
+            where : {
+                [Op.or] : [{
+                    [Op.and]: {
+                        name: { [Op.startsWith] : "김" },
+                        age:  { [Op.eq] : 29 }
+                    }
+                }, {
+                    name: { [Op.startsWith] : "하" },
+                    age: { [Op.eq] : 29 }
+                }]
+            },
+            order : [['age', 'DESC'], ['name', 'ASC']]
+        });
+        
+        const boardResult = await Board.findAll();
+
+        const user = await User.findOne({
+            where: { id: req.params.id }
+        });
+
+        if(!user) {
+            res.status(400).send({ msg: '해당 유저가 존재하지 않습니다.'});
+        }
+
+        await user.destroy();
+        board.title += "test 타이틀 입니다.";
+        await board.save();
+
         res.status(200).send({
-            result
-        });
-    } else {
-        result = `아이디가 ${req.params.id}인 유저가 존재하지 않습니다.`;
-        res.status(400).send({
-            result
-        });
+            user,
+            board,
+            users: {
+                count: userResult.length,
+                data: userResult
+            },
+            boards: {
+                count: boardResult.length,
+                data: boardResult
+            }
+        })
+    } catch(err) {
+        console.log(err)
+        res.status(500).send({msg: "서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요."})
     }
 });
 
