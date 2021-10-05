@@ -10,4 +10,4 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/users", userRouter);
 app.use("/boards", boardRouter);
 
-app.listen(3000);
+app.listen(3002);

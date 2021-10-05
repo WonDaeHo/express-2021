@@ -96,21 +96,22 @@ boardRouter.put("/:id", (req, res) => {
     }
 });
 
-boardRouter.delete("/:id", (req, res) => {
-    let findBoard = _.find(boards, {id: parseInt(req.params.id)});
-    let result;
-    if(findBoard && findBoard.id == req.params.id){
-        boards = _.reject(boards, ["id", parseInt(req.params.id)]);
-        result = `아이디가 ${req.params.id}인 글 삭제`;
-        res.status(200).send({
-            result
-        });
-    } else {
-        result = `아이디가 ${req.params.id}인 글이 존재하지 않습니다.`;
-        res.status(400).send({
-            result
-        });
+boardRouter.delete("/:id", async(req, res) => {
+    try{
+    let board = await Board.findOne({
+    where:{
+    id: req.params.id
     }
-});
+    })
+    if(!board){
+    res.status(400).send({msg: '게시글이 존재하지 않습니다.'});
+    }
+    await board.destroy();
+    res.status(200).send({msg: '게시글이 정상적으로 삭제 되었습니다.'})
+    }catch(err){
+    console.log(err);
+    res.status(500).send({msg: "서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요!!"})
+    }
+    });
 
 export default boardRouter;
